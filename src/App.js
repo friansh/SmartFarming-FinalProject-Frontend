@@ -1,24 +1,37 @@
-import logo from './logo.svg';
-import './App.css';
+import { Switch, Route } from "react-router-dom";
+import Login from "./pages/Login";
+import SignUp from "./pages/SignUp";
+import DashboardPage from "./pages/Dashboard";
+import JournalPage from "./pages/Journal";
+import ProfilePage from "./pages/Profile";
+import ClimatePage from "./pages/Climate";
+import CCTVPage from "./pages/CCTV";
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <Switch>
+      <Route exact path="/">
+        <DashboardPage />
+      </Route>
+      <Route exact path="/register">
+        <SignUp />
+      </Route>
+      <Route exact path="/login">
+        <Login />
+      </Route>
+      <Route exact path="/journal">
+        <JournalPage />
+      </Route>
+      <Route exact path="/climate">
+        <ClimatePage />
+      </Route>
+      <Route exact path="/profile">
+        <ProfilePage />
+      </Route>
+      <Route exact path="/cctv">
+        <CCTVPage />
+      </Route>
+    </Switch>
   );
 }
 
