@@ -11,6 +11,7 @@ import TextField from "@material-ui/core/TextField";
 import Button from "@material-ui/core/Button";
 import Slider from "@material-ui/core/Slider";
 import InputAdornment from "@material-ui/core/InputAdornment";
+import Switch from "@material-ui/core/Switch";
 
 import SaveAltIcon from "@material-ui/icons/SaveAlt";
 
@@ -47,6 +48,9 @@ const useStyles = makeStyles((theme) => ({
   timePicker: {
     marginRight: theme.spacing(2),
   },
+  featureToggle: {
+    marginLeft: theme.spacing(-2),
+  },
 }));
 
 function Alert(props) {
@@ -74,6 +78,14 @@ export default function ClimatePage(props) {
   const [selectedDate, setSelectedDate] = useState(
     new Date("2014-08-18T21:11:54")
   );
+
+  const [featureToggles, setFeatureToggles] = useState({
+    phToggle: true,
+    tdsToggle: true,
+    ecToggle: true,
+    lightIntensityToggle: true,
+    nutrientFlowToggle: true,
+  });
 
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarSeverity, setSnackbarSeverity] = useState();
@@ -120,6 +132,14 @@ export default function ClimatePage(props) {
 
   const handleNutrientFlowChange = (e, newValue) => {
     setNutrientFlow(newValue);
+  };
+
+  const handleFeatureToggles = (e) => {
+    // console.log({ [e.target.name]: e.target.checked });
+    setFeatureToggles({
+      ...featureToggles,
+      [e.target.name]: e.target.checked,
+    });
   };
 
   const handleAgroclimateConfigSave = () => {
@@ -172,8 +192,16 @@ export default function ClimatePage(props) {
                     variant="subtitle1"
                     className={classes.parameterCaption}
                   >
+                    <Switch
+                      className={classes.featureToggle}
+                      checked={featureToggles.phToggle}
+                      color="primary"
+                      onChange={handleFeatureToggles}
+                      name="phToggle"
+                    />
                     pH
                   </Typography>
+
                   <Slider
                     value={pH}
                     onChange={handlePhChange}
@@ -199,6 +227,13 @@ export default function ClimatePage(props) {
                     variant="subtitle1"
                     className={classes.parameterCaption}
                   >
+                    <Switch
+                      className={classes.featureToggle}
+                      checked={featureToggles.tdsToggle}
+                      color="primary"
+                      onChange={handleFeatureToggles}
+                      name="tdsToggle"
+                    />
                     TDS
                   </Typography>
                   <Slider
@@ -229,6 +264,13 @@ export default function ClimatePage(props) {
                     variant="subtitle1"
                     className={classes.parameterCaption}
                   >
+                    <Switch
+                      className={classes.featureToggle}
+                      checked={featureToggles.ecToggle}
+                      color="primary"
+                      onChange={handleFeatureToggles}
+                      name="ecToggle"
+                    />
                     Electrical Conductivity
                   </Typography>
                   <Slider
@@ -259,6 +301,13 @@ export default function ClimatePage(props) {
                     variant="subtitle1"
                     className={classes.parameterCaption}
                   >
+                    <Switch
+                      className={classes.featureToggle}
+                      checked={featureToggles.lightIntensityToggle}
+                      color="primary"
+                      onChange={handleFeatureToggles}
+                      name="lightIntensityToggle"
+                    />
                     Light Intensity
                   </Typography>
                   <Slider
@@ -289,6 +338,13 @@ export default function ClimatePage(props) {
                     variant="subtitle1"
                     className={classes.parameterCaption}
                   >
+                    <Switch
+                      className={classes.featureToggle}
+                      checked={featureToggles.nutrientFlowToggle}
+                      color="primary"
+                      onChange={handleFeatureToggles}
+                      name="nutrientFlowToggle"
+                    />
                     Nutrient Flow
                   </Typography>
                   <Slider
