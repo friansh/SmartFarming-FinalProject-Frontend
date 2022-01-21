@@ -141,7 +141,8 @@ export default function DashboardPage(props) {
   const [dayEndTime, setDayEndTime] = useState(new Date());
 
   const [pH, setPH] = useState();
-  const [lightIntensity, setLightIntensity] = useState();
+  const [lightIntensityInside, setLightIntensityInside] = useState();
+  const [lightIntensityOutside, setLightIntensityOutside] = useState();
   const [nutrientFlow, setNutrientFlow] = useState();
   const [TDS, setTDS] = useState();
   const [EC, setEC] = useState();
@@ -163,7 +164,8 @@ export default function DashboardPage(props) {
         socket.on(response.data.user_id, (data) => {
           const agroclimateData = JSON.parse(data);
           setPH(agroclimateData.ph);
-          setLightIntensity(agroclimateData.light_intensity);
+          setLightIntensityInside(agroclimateData.light_intensity_inside);
+          setLightIntensityOutside(agroclimateData.light_intensity_outside);
           setNutrientFlow(agroclimateData.nutrient_flow);
           setTDS(agroclimateData.tds);
           setEC(agroclimateData.ec);
@@ -193,7 +195,8 @@ export default function DashboardPage(props) {
     }).then((response) => {
       const agroclimateData = response.data;
       setPH(agroclimateData.ph);
-      setLightIntensity(agroclimateData.light_intensity);
+      setLightIntensityInside(agroclimateData.light_intensity_inside);
+      setLightIntensityOutside(agroclimateData.light_intensity_outside);
       setNutrientFlow(agroclimateData.nutrient_flow);
       setTDS(agroclimateData.tds);
       setEC(agroclimateData.ec);
@@ -325,7 +328,7 @@ export default function DashboardPage(props) {
             </Avatar>
             <Typography variant="h6">Light Intensity (outside)</Typography>
             <Typography variant="body1" className={classes.avgValue}>
-              {lightIntensity} lux
+              {lightIntensityOutside} lux
             </Typography>
           </Paper>
         </Grid>
@@ -337,7 +340,7 @@ export default function DashboardPage(props) {
             </Avatar>
             <Typography variant="h6">Light Intensity (inside)</Typography>
             <Typography variant="body1" className={classes.avgValue}>
-              {lightIntensity} lux
+              {lightIntensityInside} lux
             </Typography>
           </Paper>
         </Grid>

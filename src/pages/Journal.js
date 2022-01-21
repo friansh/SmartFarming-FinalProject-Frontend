@@ -110,7 +110,8 @@ export default function LogPage(props) {
   const [timeWindow, setTimeWindow] = useState(1);
 
   const [pHData, setPHData] = useState();
-  const [lightIntensityData, setLightIntensityData] = useState();
+  const [lightIntensityInsideData, setLightIntensityInsideData] = useState();
+  const [lightIntensityOutsideData, setLightIntensityOutsideData] = useState();
   const [nutrientFlowData, setNutrientFlowData] = useState();
   const [TDSData, setTDSData] = useState();
   const [ECData, setECData] = useState();
@@ -146,13 +147,24 @@ export default function LogPage(props) {
             },
           ],
         });
-        setLightIntensityData({
+        setLightIntensityInsideData({
           labels: timeLabel,
           datasets: [
             {
-              label: "Light Intensity (luc)",
+              label: "Light Intensity (inside) (lux)",
               borderColor: "#34495e",
-              data: response.data.map((data) => data.light_intensity),
+              data: response.data.map((data) => data.light_intensity_inside),
+              ...generalDataSettings,
+            },
+          ],
+        });
+        setLightIntensityOutsideData({
+          labels: timeLabel,
+          datasets: [
+            {
+              label: "Light Intensity (outside) (lux)",
+              borderColor: "#34495e",
+              data: response.data.map((data) => data.light_intensity_outside),
               ...generalDataSettings,
             },
           ],
@@ -340,9 +352,71 @@ export default function LogPage(props) {
                   variant="subtitle1"
                   className={classes.graphCardTitle}
                 >
-                  Light Intensity (lux)
+                  Light Intensity (inside) (lux)
                 </Typography>
-                <Line data={lightIntensityData} options={graphSettings} />
+                <Line data={lightIntensityInsideData} options={graphSettings} />
+                <TableContainer component={Paper} style={{ marginTop: 15 }}>
+                  <Table size="small" aria-label="a dense table">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell style={{ fontWeight: "bold" }}>
+                          Parameter
+                        </TableCell>
+                        <TableCell style={{ fontWeight: "bold" }} align="right">
+                          Value
+                        </TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      <TableRow>
+                        <TableCell component="th" scope="row">
+                          Mean
+                        </TableCell>
+                        <TableCell align="right">12</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell component="th" scope="row">
+                          Median
+                        </TableCell>
+                        <TableCell align="right">13</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell component="th" scope="row">
+                          Mode
+                        </TableCell>
+                        <TableCell align="right">14</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell component="th" scope="row">
+                          Standard Deviation
+                        </TableCell>
+                        <TableCell align="right">15</TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </React.Fragment>
+            )}
+          </Paper>
+        </Grid>
+        <Grid item xs={12} sm={6} md={4}>
+          <Paper className={classes.defaultPaper}>
+            {loading ? (
+              <div className={classes.paperLoadingContainer}>
+                <CircularProgress size={24} />
+              </div>
+            ) : (
+              <React.Fragment>
+                <Typography
+                  variant="subtitle1"
+                  className={classes.graphCardTitle}
+                >
+                  Light Intensity (outside) (lux)
+                </Typography>
+                <Line
+                  data={lightIntensityOutsideData}
+                  options={graphSettings}
+                />
                 <TableContainer component={Paper} style={{ marginTop: 15 }}>
                   <Table size="small" aria-label="a dense table">
                     <TableHead>
@@ -564,7 +638,7 @@ export default function LogPage(props) {
             )}
           </Paper>
         </Grid>
-        <Grid item xs={12}>
+        {/* <Grid item xs={12}>
           <Paper className={classes.defaultPaper}>
             <Typography
               variant="subtitle1"
@@ -602,7 +676,7 @@ export default function LogPage(props) {
               </React.Fragment>
             )}
           </Paper>
-        </Grid>
+        </Grid> */}
       </Grid>
     </MiniDrawer>
   );
