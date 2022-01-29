@@ -8,6 +8,7 @@ import Typography from "@material-ui/core/Typography";
 import Paper from "@material-ui/core/Paper";
 import Grid from "@material-ui/core/Grid";
 import Avatar from "@material-ui/core/Avatar";
+import Tooltip from "@material-ui/core/Tooltip";
 
 import Table from "@material-ui/core/Table";
 import TableBody from "@material-ui/core/TableBody";
@@ -25,8 +26,14 @@ import WavesIcon from "@material-ui/icons/Waves";
 import InvertColorsIcon from "@material-ui/icons/InvertColors";
 import LocalDrinkIcon from "@material-ui/icons/LocalDrink";
 import BubbleChartIcon from "@material-ui/icons/BubbleChart";
+import WarningIcon from "@material-ui/icons/Warning";
+import ArrowUpwardIcon from "@material-ui/icons/ArrowUpward";
+import ArrowDownwardIcon from "@material-ui/icons/ArrowDownward";
+import RadioButtonCheckedIcon from "@material-ui/icons/RadioButtonChecked";
+import RadioButtonUncheckedIcon from "@material-ui/icons/RadioButtonUnchecked";
+import ScheduleIcon from "@material-ui/icons/Schedule";
 
-import { yellow, blue, teal } from "@material-ui/core/colors";
+import { yellow, blue, teal, red } from "@material-ui/core/colors";
 
 import Axios from "axios";
 import { useCookies } from "react-cookie";
@@ -124,6 +131,9 @@ const useStyles = makeStyles((theme) => ({
   lastUpdate: {
     padding: theme.spacing(1),
   },
+  parameterWarning: {
+    color: red[500],
+  },
 }));
 
 export default function DashboardPage(props) {
@@ -147,6 +157,16 @@ export default function DashboardPage(props) {
   const [TDS, setTDS] = useState();
   const [EC, setEC] = useState();
   const [agroclimateTimestamp, setAgroclimateTimestamp] = useState(new Date());
+
+  const [thresholds, setThresholds] = useState({
+    tdsMax: undefined,
+    tdsMin: undefined,
+    ecMax: undefined,
+    ecMin: undefined,
+    lightIntensity: undefined,
+    ph: undefined,
+    nutrientFlow: undefined,
+  });
 
   useEffect(() => {
     const socket = io.connect(process.env.REACT_APP_SOCKETIO_URL);
@@ -186,6 +206,15 @@ export default function DashboardPage(props) {
     }).then((response) => {
       setDayStartTime(new Date(response.data.day_start));
       setDayEndTime(new Date(response.data.day_end));
+      setThresholds({
+        tdsMax: response.data.tds_max,
+        tdsMin: response.data.tds_min,
+        ecMax: response.data.ec_max,
+        ecMin: response.data.ec_min,
+        lightIntensity: response.data.light_intensity,
+        ph: response.data.ph,
+        nutrientFlow: response.data.nutrient_flow,
+      });
     });
 
     Axios.get("/log/latest", {
@@ -315,8 +344,52 @@ export default function DashboardPage(props) {
               <InvertColorsIcon className={classes.agdIcon} />
             </Avatar>
             <Typography variant="h6">pH</Typography>
-            <Typography variant="body1" className={classes.avgValue}>
-              {Math.round((pH + Number.EPSILON) * 10) / 10}
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-around",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                }}
+              >
+                <Typography variant="body1" className={classes.avgValue}>
+                  {Math.round((pH + Number.EPSILON) * 10) / 10}
+                </Typography>
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                }}
+              >
+                {pH < thresholds.ph * 0.9 || pH > thresholds.ph * 1.1 ? (
+                  <>
+                    <Tooltip title="The installation pH correcting state. Check regularly to ensure.">
+                      <RadioButtonCheckedIcon />
+                    </Tooltip>
+                    <Typography variant="body1">Correcting...</Typography>
+                  </>
+                ) : (
+                  <>
+                    <Tooltip title="The installation pH correcting state. Check regularly to ensure.">
+                      <RadioButtonUncheckedIcon />
+                    </Tooltip>
+                    <Typography variant="body1">Corrected</Typography>
+                  </>
+                )}
+              </div>
+            </div>
+            <hr />
+            <Typography variant="caption">
+              Setpoint:
+              <ArrowDownwardIcon fontSize="small" />
+              {Math.round(thresholds.ph * 0.9 * 100) / 100}{" "}
+              <ArrowUpwardIcon fontSize="small" />
+              {Math.round(thresholds.ph * 1.1 * 100) / 100}
             </Typography>
           </Paper>
         </Grid>
@@ -327,8 +400,65 @@ export default function DashboardPage(props) {
               <WbIncandescentIcon className={classes.agdIcon} />
             </Avatar>
             <Typography variant="h6">Light Intensity (outside)</Typography>
-            <Typography variant="body1" className={classes.avgValue}>
-              {lightIntensityOutside} lux
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-around",
+              }}
+            >
+              <div>
+                <Typography variant="body1" className={classes.avgValue}>
+                  {lightIntensityOutside} lux
+                </Typography>
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                }}
+              >
+                {lightIntensityOutside < thresholds.lightIntensity &&
+                new Date() >
+                  new Date(
+                    new Date().getFullYear(),
+                    new Date().getMonth(),
+                    new Date().getDate(),
+                    dayStartTime.getHours(),
+                    dayStartTime.getMinutes(),
+                    dayStartTime.getSeconds()
+                  ) &&
+                new Date() <
+                  new Date(
+                    new Date().getFullYear(),
+                    new Date().getMonth(),
+                    new Date().getDate(),
+                    dayEndTime.getHours(),
+                    dayEndTime.getMinutes(),
+                    dayEndTime.getSeconds()
+                  ) ? (
+                  <>
+                    <Tooltip title="The lamp state supposed to be. Check light intensity (inside value) to ensure.">
+                      <RadioButtonCheckedIcon />
+                    </Tooltip>
+                    <Typography variant="body1">Lamp On</Typography>
+                  </>
+                ) : (
+                  <>
+                    <Tooltip title="The lamp state supposed to be. Check light intensity (inside value) to ensure.">
+                      <RadioButtonUncheckedIcon />
+                    </Tooltip>
+                    <Typography variant="body1">Lamp Off</Typography>
+                  </>
+                )}
+              </div>
+            </div>
+            <hr />
+            <Typography variant="caption">
+              Setpoint:
+              <ArrowUpwardIcon fontSize="small" />
+              {thresholds.lightIntensity} lux <ScheduleIcon />{" "}
+              {dayStartTime.toLocaleTimeString()} -{" "}
+              {dayEndTime.toLocaleTimeString()}
             </Typography>
           </Paper>
         </Grid>
@@ -351,9 +481,55 @@ export default function DashboardPage(props) {
               <WavesIcon className={classes.agdIcon} />
             </Avatar>
             <Typography variant="h6">Nutrient Flow</Typography>
-            <Typography variant="body1" className={classes.avgValue}>
-              {Math.round((nutrientFlow + Number.EPSILON) * 100) / 100}{" "}
-              &#8467;/m
+
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-around",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                }}
+              >
+                <Typography variant="body1" className={classes.avgValue}>
+                  {Math.round((nutrientFlow + Number.EPSILON) * 100) / 100}{" "}
+                  &#8467;/m
+                </Typography>
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                }}
+              >
+                {nutrientFlow < thresholds.nutrientFlow * 0.9 ||
+                nutrientFlow < thresholds.nutrientFlow * 1.1 ? (
+                  <>
+                    <Tooltip title="The installation nutrient flow correcting state. Check regularly to ensure.">
+                      <RadioButtonCheckedIcon />
+                    </Tooltip>
+                    <Typography variant="body1">Correcting...</Typography>
+                  </>
+                ) : (
+                  <>
+                    <Tooltip title="The installation nutrient flow correcting state. Check regularly to ensure.">
+                      <RadioButtonUncheckedIcon />
+                    </Tooltip>
+                    <Typography variant="body1">Corrected</Typography>
+                  </>
+                )}
+              </div>
+            </div>
+            <hr />
+            <Typography variant="caption">
+              Setpoint:
+              <ArrowDownwardIcon fontSize="small" />
+              {Math.round(thresholds.nutrientFlow * 0.9 * 100) / 100}{" "}
+              <ArrowUpwardIcon fontSize="small" />
+              {Math.round(thresholds.nutrientFlow * 1.1 * 100) / 100} &#8467;/m
             </Typography>
           </Paper>
         </Grid>
@@ -367,7 +543,38 @@ export default function DashboardPage(props) {
               Nutrients Total Dissolved Solid (TDS)
             </Typography>
             <Typography variant="body1" className={classes.avgValue}>
-              {Math.round(TDS + Number.EPSILON)} ppm
+              <span
+                className={
+                  TDS > thresholds.tdsMax || TDS < thresholds.tdsMin
+                    ? classes.parameterWarning
+                    : null
+                }
+              >
+                {Math.round(TDS + Number.EPSILON)} ppm
+                {TDS > thresholds.tdsMax ? (
+                  <>
+                    <ArrowUpwardIcon />
+                    <Tooltip title="The TDS value is above the threshold">
+                      <WarningIcon />
+                    </Tooltip>
+                  </>
+                ) : null}
+                {TDS < thresholds.tdsMin ? (
+                  <>
+                    <ArrowDownwardIcon />
+                    <Tooltip title="The TDS value is below the threshold">
+                      <WarningIcon />
+                    </Tooltip>
+                  </>
+                ) : null}
+              </span>
+            </Typography>
+            <hr />
+            <Typography variant="caption">
+              Setpoint:
+              <ArrowDownwardIcon fontSize="small" />
+              {thresholds.tdsMin} <ArrowUpwardIcon fontSize="small" />
+              {thresholds.tdsMax} ppm
             </Typography>
           </Paper>
         </Grid>
@@ -381,7 +588,38 @@ export default function DashboardPage(props) {
               Nutrients Electrical Conductivity (EC)
             </Typography>
             <Typography variant="body1" className={classes.avgValue}>
-              {Math.round((EC + Number.EPSILON) * 100) / 100} mS/cm
+              <span
+                className={
+                  EC > thresholds.ecMax || EC < thresholds.ecMin
+                    ? classes.parameterWarning
+                    : null
+                }
+              >
+                {Math.round((EC + Number.EPSILON) * 100) / 100} mS/cm
+                {EC > thresholds.ecMax ? (
+                  <>
+                    <ArrowUpwardIcon />
+                    <Tooltip title="The TDSc value is above the threshold">
+                      <WarningIcon />
+                    </Tooltip>
+                  </>
+                ) : null}
+                {EC < thresholds.ecMin ? (
+                  <>
+                    <ArrowDownwardIcon />
+                    <Tooltip title="The EC value is below the threshold">
+                      <WarningIcon />
+                    </Tooltip>
+                  </>
+                ) : null}
+              </span>
+            </Typography>
+            <hr />
+            <Typography variant="caption">
+              Setpoint:
+              <ArrowDownwardIcon fontSize="small" />
+              {thresholds.ecMin} <ArrowUpwardIcon fontSize="small" />
+              {thresholds.ecMax} mS/cm
             </Typography>
           </Paper>
         </Grid>

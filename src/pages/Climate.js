@@ -12,8 +12,10 @@ import Button from "@material-ui/core/Button";
 import Slider from "@material-ui/core/Slider";
 import InputAdornment from "@material-ui/core/InputAdornment";
 import Switch from "@material-ui/core/Switch";
+import Tooltip from "@material-ui/core/Tooltip";
 
 import SaveAltIcon from "@material-ui/icons/SaveAlt";
+import InfoIcon from "@material-ui/icons/Info";
 
 import Snackbar from "@material-ui/core/Snackbar";
 import MuiAlert from "@material-ui/lab/Alert";
@@ -69,15 +71,23 @@ export default function ClimatePage(props) {
 
   const [cookies, setCookies, removeCookies] = useCookies();
 
-  const [pH, setPh] = useState(0);
-  const [TDS, setTDS] = useState(0);
-  const [EC, setEC] = useState(0);
-  const [lightIntensity, setLightIntensity] = useState(0);
-  const [nutrientFlow, setNutrientFlow] = useState(0);
+  const [agroclimateSettings, setAgroclimateSettings] = useState({
+    ph: 0,
+    tdsMax: 0,
+    tdsMin: 0,
+    ecMax: 0,
+    ecMin: 0,
+    lightIntensity: 0,
+    nutrientFlow: 0,
+  });
 
-  const [selectedDate, setSelectedDate] = useState(
-    new Date("2014-08-18T21:11:54")
-  );
+  const [dayStart, setDayStart] = useState(new Date());
+  const [dayEnd, setDayEnd] = useState(new Date());
+
+  const [deviceSettings, setDeviceSettings] = useState({
+    refreshTime: 0,
+    loggingTime: 0,
+  });
 
   const [featureToggles, setFeatureToggles] = useState({
     phToggle: true,
@@ -94,6 +104,9 @@ export default function ClimatePage(props) {
   const [loading, setLoading] = useState(true);
   const [redirect, setRedirect] = useState();
 
+  const climateControlTooltipCaption =
+    "The parameter on the dashboard page will be marked red if the value off from this threshold.";
+
   useEffect(() => {
     Axios.get("/agroclimate", {
       headers: {
@@ -101,11 +114,22 @@ export default function ClimatePage(props) {
       },
     })
       .then((response) => {
-        setPh(response.data.ph);
-        setTDS(response.data.tds);
-        setEC(response.data.ec);
-        setLightIntensity(response.data.light_intensity);
-        setNutrientFlow(response.data.nutrient_flow);
+        setAgroclimateSettings({
+          ph: response.data.ph,
+          tdsMax: response.data.tds_max,
+          tdsMin: response.data.tds_min,
+          ecMax: response.data.ec_max,
+          ecMin: response.data.ec_min,
+          lightIntensity: response.data.light_intensity,
+          nutrientFlow: response.data.nutrient_flow,
+        });
+
+        setDeviceSettings({
+          refreshTime: response.data.refresh_time,
+          loggingTime: response.data.logging_time,
+        });
+        setDayStart(new Date(response.data.day_start));
+        setDayEnd(new Date(response.data.day_end));
         setLoading(false);
       })
       .catch((error) => {
@@ -115,42 +139,117 @@ export default function ClimatePage(props) {
   }, [cookies.access_token]);
 
   const handlePhChange = (e, newValue) => {
-    setPh(newValue);
+    setAgroclimateSettings({
+      ...agroclimateSettings,
+      ph: newValue,
+    });
   };
 
-  const handleTDSChange = (e, newValue) => {
-    setTDS(newValue);
+  const handleTdsMaxChange = (e, newValue) => {
+    setAgroclimateSettings({
+      ...agroclimateSettings,
+      tdsMax: newValue,
+    });
   };
 
-  const handleECChange = (e, newValue) => {
-    setEC(newValue);
+  const handleTdsMinChange = (e, newValue) => {
+    setAgroclimateSettings({
+      ...agroclimateSettings,
+      tdsMin: newValue,
+    });
+  };
+
+  const handleEcMaxChange = (e, newValue) => {
+    setAgroclimateSettings({
+      ...agroclimateSettings,
+      ecMax: newValue,
+    });
+  };
+
+  const handleEcMinChange = (e, newValue) => {
+    setAgroclimateSettings({
+      ...agroclimateSettings,
+      ecMin: newValue,
+    });
   };
 
   const handleLightIntensityChange = (e, newValue) => {
-    setLightIntensity(newValue);
+    setAgroclimateSettings({
+      ...agroclimateSettings,
+      lightIntensity: newValue,
+    });
   };
 
   const handleNutrientFlowChange = (e, newValue) => {
-    setNutrientFlow(newValue);
+    setAgroclimateSettings({
+      ...agroclimateSettings,
+      nutrientFlow: newValue,
+    });
   };
 
   const handleFeatureToggles = (e) => {
-    // console.log({ [e.target.name]: e.target.checked });
     setFeatureToggles({
       ...featureToggles,
       [e.target.name]: e.target.checked,
     });
   };
 
-  const handleAgroclimateConfigSave = () => {
-    handleSnackbarOpen(
-      "The agroclimate configuration has been saved!",
-      "success"
-    );
+  const handleDeviceSettingsChange = (e) => {
+    setDeviceSettings({
+      ...deviceSettings,
+      [e.target.name]: e.target.value,
+    });
   };
 
-  const handleDateChange = (date) => {
-    setSelectedDate(date);
+  const handleAgroclimateConfigSave = () => {
+    const clickTime = Date.now();
+    Axios.patch(
+      "/agroclimate",
+      {
+        refresh_time: deviceSettings.refreshTime,
+        logging_time: deviceSettings.loggingTime,
+        ph: agroclimateSettings.ph,
+        light_intensity: agroclimateSettings.lightIntensity,
+        nutrient_flow: agroclimateSettings.nutrientFlow,
+        tds_max: agroclimateSettings.tdsMax,
+        tds_min: agroclimateSettings.tdsMin,
+        ec_max: agroclimateSettings.ecMax,
+        ec_min: agroclimateSettings.ecMin,
+        day_start: dayStart.toISOString(),
+        day_end: dayEnd.toISOString(),
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${cookies.access_token}`,
+        },
+      }
+    )
+      .then(() => {
+        const successResponseTime = Date.now();
+        console.info(
+          `Click time: ${clickTime}; Response time: ${successResponseTime}; Latency: ${
+            successResponseTime - clickTime
+          }`
+        );
+        handleSnackbarOpen(
+          "The agroclimate configuration has been saved!",
+          "success"
+        );
+      })
+      .catch(() => {
+        handleSnackbarOpen(
+          "Failed to save the agroclimate configuration!",
+          "error"
+        );
+      });
+  };
+
+  const handleDayStartChange = (date) => {
+    setDayStart(date);
+  };
+
+  const handleDayEndChange = (date) => {
+    setDayEnd(date);
   };
 
   const handleSnackbarOpen = (text, severity) => {
@@ -203,7 +302,7 @@ export default function ClimatePage(props) {
                   </Typography>
 
                   <Slider
-                    value={pH}
+                    value={agroclimateSettings.ph}
                     onChange={handlePhChange}
                     defaultValue={0}
                     step={0.1}
@@ -213,7 +312,7 @@ export default function ClimatePage(props) {
                 </Grid>
                 <Grid item xs={12} sm={4}>
                   <TextField
-                    value={pH}
+                    value={agroclimateSettings.ph}
                     variant="outlined"
                     fullWidth
                     InputProps={{
@@ -221,24 +320,20 @@ export default function ClimatePage(props) {
                     }}
                   />
                 </Grid>
-                {/* TDS */}
+                {/* TDS max */}
                 <Grid item xs={12} sm={8}>
                   <Typography
                     variant="subtitle1"
                     className={classes.parameterCaption}
                   >
-                    <Switch
-                      className={classes.featureToggle}
-                      checked={featureToggles.tdsToggle}
-                      color="primary"
-                      onChange={handleFeatureToggles}
-                      name="tdsToggle"
-                    />
-                    TDS
+                    <Tooltip title={climateControlTooltipCaption}>
+                      <InfoIcon />
+                    </Tooltip>
+                    TDS Maximum
                   </Typography>
                   <Slider
-                    value={TDS}
-                    onChange={handleTDSChange}
+                    value={agroclimateSettings.tdsMax}
+                    onChange={handleTdsMaxChange}
                     defaultValue={0}
                     step={1}
                     min={0}
@@ -247,7 +342,7 @@ export default function ClimatePage(props) {
                 </Grid>
                 <Grid item xs={12} sm={4}>
                   <TextField
-                    value={TDS}
+                    value={agroclimateSettings.tdsMax}
                     variant="outlined"
                     fullWidth
                     InputProps={{
@@ -258,24 +353,53 @@ export default function ClimatePage(props) {
                     }}
                   />
                 </Grid>
-                {/* Electrical conductivity */}
+                {/* TDS min*/}
                 <Grid item xs={12} sm={8}>
                   <Typography
                     variant="subtitle1"
                     className={classes.parameterCaption}
                   >
-                    <Switch
-                      className={classes.featureToggle}
-                      checked={featureToggles.ecToggle}
-                      color="primary"
-                      onChange={handleFeatureToggles}
-                      name="ecToggle"
-                    />
-                    Electrical Conductivity
+                    <Tooltip title={climateControlTooltipCaption}>
+                      <InfoIcon />
+                    </Tooltip>
+                    TDS Minimum
                   </Typography>
                   <Slider
-                    value={EC}
-                    onChange={handleECChange}
+                    value={agroclimateSettings.tdsMin}
+                    onChange={handleTdsMinChange}
+                    defaultValue={0}
+                    step={1}
+                    min={0}
+                    max={2000}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <TextField
+                    value={agroclimateSettings.tdsMin}
+                    variant="outlined"
+                    fullWidth
+                    InputProps={{
+                      readOnly: true,
+                      endAdornment: (
+                        <InputAdornment position="end">ppm</InputAdornment>
+                      ),
+                    }}
+                  />
+                </Grid>
+                {/* Electrical conductivity max*/}
+                <Grid item xs={12} sm={8}>
+                  <Typography
+                    variant="subtitle1"
+                    className={classes.parameterCaption}
+                  >
+                    <Tooltip title={climateControlTooltipCaption}>
+                      <InfoIcon />
+                    </Tooltip>
+                    Electrical Conductivity Maximum
+                  </Typography>
+                  <Slider
+                    value={agroclimateSettings.ecMax}
+                    onChange={handleEcMaxChange}
                     defaultValue={0}
                     step={0.1}
                     min={0}
@@ -284,7 +408,40 @@ export default function ClimatePage(props) {
                 </Grid>
                 <Grid item xs={12} sm={4}>
                   <TextField
-                    value={EC}
+                    value={agroclimateSettings.ecMax}
+                    variant="outlined"
+                    fullWidth
+                    InputProps={{
+                      readOnly: true,
+                      endAdornment: (
+                        <InputAdornment position="end">mS/cm</InputAdornment>
+                      ),
+                    }}
+                  />
+                </Grid>
+                {/* Electrical conductivity max*/}
+                <Grid item xs={12} sm={8}>
+                  <Typography
+                    variant="subtitle1"
+                    className={classes.parameterCaption}
+                  >
+                    <Tooltip title={climateControlTooltipCaption}>
+                      <InfoIcon />
+                    </Tooltip>
+                    Electrical Conductivity Minimum
+                  </Typography>
+                  <Slider
+                    value={agroclimateSettings.ecMin}
+                    onChange={handleEcMinChange}
+                    defaultValue={0}
+                    step={0.1}
+                    min={0}
+                    max={10}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <TextField
+                    value={agroclimateSettings.ecMin}
                     variant="outlined"
                     fullWidth
                     InputProps={{
@@ -311,7 +468,7 @@ export default function ClimatePage(props) {
                     Light Intensity
                   </Typography>
                   <Slider
-                    value={lightIntensity}
+                    value={agroclimateSettings.lightIntensity}
                     onChange={handleLightIntensityChange}
                     defaultValue={0}
                     step={1}
@@ -321,7 +478,7 @@ export default function ClimatePage(props) {
                 </Grid>
                 <Grid item xs={12} sm={4}>
                   <TextField
-                    value={lightIntensity}
+                    value={agroclimateSettings.lightIntensity}
                     variant="outlined"
                     InputProps={{
                       readOnly: true,
@@ -348,7 +505,7 @@ export default function ClimatePage(props) {
                     Nutrient Flow
                   </Typography>
                   <Slider
-                    value={nutrientFlow}
+                    value={agroclimateSettings.nutrientFlow}
                     onChange={handleNutrientFlowChange}
                     defaultValue={0}
                     step={0.1}
@@ -358,7 +515,7 @@ export default function ClimatePage(props) {
                 </Grid>
                 <Grid item xs={12} sm={4}>
                   <TextField
-                    value={nutrientFlow}
+                    value={agroclimateSettings.nutrientFlow}
                     variant="outlined"
                     InputProps={{
                       readOnly: true,
@@ -384,12 +541,14 @@ export default function ClimatePage(props) {
               <div className={classes.controlContent}>
                 <TextField
                   label="Regather Configuration Interval"
+                  name="refreshTime"
                   InputProps={{
                     endAdornment: (
-                      <InputAdornment position="start">s</InputAdornment>
+                      <InputAdornment position="start">ms</InputAdornment>
                     ),
                   }}
-                  value={12}
+                  value={deviceSettings.refreshTime}
+                  onChange={handleDeviceSettingsChange}
                   type="number"
                   variant="filled"
                   fullWidth
@@ -397,12 +556,14 @@ export default function ClimatePage(props) {
                 />
                 <TextField
                   label="Agroclimate Parameters Logging Interval"
+                  name="loggingTime"
                   InputProps={{
                     endAdornment: (
-                      <InputAdornment position="start">s</InputAdornment>
+                      <InputAdornment position="start">ms</InputAdornment>
                     ),
                   }}
-                  value={12}
+                  value={deviceSettings.loggingTime}
+                  onChange={handleDeviceSettingsChange}
                   type="number"
                   variant="filled"
                   fullWidth
@@ -424,8 +585,8 @@ export default function ClimatePage(props) {
                     label="Day start time"
                     format="HH:mm:ss"
                     views={["hours", "minutes", "seconds"]}
-                    value={selectedDate}
-                    onChange={handleDateChange}
+                    value={dayStart}
+                    onChange={handleDayStartChange}
                     className={classes.timePicker}
                   />
                   <TimePicker
@@ -434,8 +595,8 @@ export default function ClimatePage(props) {
                     label="Day end time"
                     format="HH:mm:ss"
                     views={["hours", "minutes", "seconds"]}
-                    value={selectedDate}
-                    onChange={handleDateChange}
+                    value={dayEnd}
+                    onChange={handleDayEndChange}
                   />
                 </MuiPickersUtilsProvider>
               </div>
