@@ -107,7 +107,8 @@ export default function LogPage(props) {
     let date = new Date();
     return date;
   });
-  const [timeWindow, setTimeWindow] = useState(1);
+
+  const [timeWindow, setTimeWindow] = useState(-1);
 
   const [pHData, setPHData] = useState();
   const [lightIntensityInsideData, setLightIntensityInsideData] = useState();
@@ -115,15 +116,20 @@ export default function LogPage(props) {
   const [nutrientFlowData, setNutrientFlowData] = useState();
   const [TDSData, setTDSData] = useState();
   const [ECData, setECData] = useState();
-  const [timeData, setTimeData] = useState([]);
-  const [imageData, setImageData] = useState();
-
-  const [snapshotIndex, setSnapshotIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [redirect, setRedirect] = useState();
 
   useEffect(() => {
-    Axios.get("/log", {
+    const CURRENT_DATE = new Date();
+    let beginTime = new Date();
+    beginTime.setDate(beginTime.getDate() - 1);
+    gatherAgroclimateLog(beginTime.toISOString(), CURRENT_DATE.toISOString());
+  }, [cookies.access_token]);
+
+  const gatherAgroclimateLog = (beginTime, endTime) => {
+    console.log(`/log/${beginTime}/${endTime}`);
+    setLoading(true);
+    Axios.get(`/log/${beginTime}/${endTime}`, {
       headers: {
         Authorization: `Bearer ${cookies.access_token}`,
       },
@@ -135,7 +141,6 @@ export default function LogPage(props) {
           let timestamp = new Date(data.createdAt);
           return timestamp.toString();
         });
-        setTimeData(timeLabel);
         setPHData({
           labels: timeLabel,
           datasets: [
@@ -202,14 +207,13 @@ export default function LogPage(props) {
             },
           ],
         });
-        setImageData(response.data.map((data) => data.image_url));
         setLoading(false);
       })
       .catch((error) => {
         console.error(error.response.data.message);
         if (error.response.status === 401) setRedirect("/login");
       });
-  }, [cookies.access_token]);
+  };
 
   const handleStartDateChange = (date) => {
     setStartDate(date);
@@ -221,11 +225,10 @@ export default function LogPage(props) {
 
   const handleTimeWindowChange = (event) => {
     setTimeWindow(event.target.value);
-  };
-
-  const handleChangeSnapshotIndex = (event, newValue) => {
-    // console.log(imageData[newValue]);
-    setSnapshotIndex(newValue);
+    const CURRENT_DATE = new Date();
+    let beginDate = new Date();
+    beginDate.setDate(beginDate.getDate() + event.target.value);
+    gatherAgroclimateLog(beginDate, CURRENT_DATE);
   };
 
   if (redirect) return <Redirect to={redirect} />;
@@ -245,10 +248,8 @@ export default function LogPage(props) {
               >
                 <MenuItem value={-30}>Last 30 days</MenuItem>
                 <MenuItem value={-7}>Last 7 days</MenuItem>
-                <MenuItem value={-2}>Yesterday</MenuItem>
-                <MenuItem value={30}>This month</MenuItem>
-                <MenuItem value={7}>This week</MenuItem>
-                <MenuItem value={1}>Today</MenuItem>
+                <MenuItem value={-2}>Last 48 hours</MenuItem>
+                <MenuItem value={-1}>Last 24 hours</MenuItem>
                 <MenuItem value={0}>Custom</MenuItem>
               </Select>
             </FormControl>
